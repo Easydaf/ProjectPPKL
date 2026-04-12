@@ -430,7 +430,7 @@
 
                     <form method="POST" action="{{ $batch ? route('batches.review.update', ['batch_id' => $batch->id]) : '#' }}" class="snack-form mt-6 space-y-5">
                         @csrf
-                        @method('PATCH')
+                        @method('PUT')
 
                         @if (! $batch)
                         <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
@@ -448,12 +448,22 @@
                                 </option>
                                 @endforeach
                             </select>
-                            <p class="mt-2 text-xs leading-5 text-slate-500">Jika memilih tidak_lulus, catatan rekomendasi wajib diisi.</p>
+                            <p class="mt-2 text-xs leading-5 text-slate-500">Jika memilih tidak_lulus, tindakan_rekomendasi wajib diisi (disposal/rework/hold).</p>
                         </div>
 
                         <div>
-                            <label for="catatan_rekomendasi" class="block text-sm font-medium text-slate-700">Catatan Rekomendasi</label>
-                            <textarea id="catatan_rekomendasi" name="catatan_rekomendasi" rows="6" data-recommendation-field @disabled(! $batch) class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 disabled:cursor-not-allowed disabled:bg-slate-100" placeholder="Tuliskan alasan, arahan, atau tindak lanjut review">{{ old('catatan_rekomendasi', $batch?->testDecision?->notes) }}</textarea>
+                            <label for="tindakan_rekomendasi" class="block text-sm font-medium text-slate-700">Tindakan Rekomendasi</label>
+                            <select id="tindakan_rekomendasi" name="tindakan_rekomendasi" data-recommendation-field @disabled(! $batch) class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 disabled:cursor-not-allowed disabled:bg-slate-100">
+                                <option value="">Pilih tindakan</option>
+                                <option value="disposal" @selected(old('tindakan_rekomendasi')==='disposal' || $batch?->testDecision?->action_recommendation === 'disposal')>disposal</option>
+                                <option value="rework" @selected(old('tindakan_rekomendasi')==='rework' || $batch?->testDecision?->action_recommendation === 'rework')>rework</option>
+                                <option value="hold" @selected(old('tindakan_rekomendasi')==='hold' || $batch?->testDecision?->action_recommendation === 'hold')>hold</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="catatan" class="block text-sm font-medium text-slate-700">Catatan</label>
+                            <textarea id="catatan" name="catatan" rows="6" @disabled(! $batch) class="mt-2 w-full rounded-2xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-900 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100 disabled:cursor-not-allowed disabled:bg-slate-100" placeholder="Tuliskan alasan, arahan, atau tindak lanjut review">{{ old('catatan', $batch?->testDecision?->notes) }}</textarea>
                         </div>
 
                         <button type="submit" @disabled(! $batch) class="snack-button inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-cyan-700 disabled:cursor-not-allowed disabled:bg-slate-400">

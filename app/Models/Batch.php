@@ -36,7 +36,7 @@ class Batch extends Model
 
     public function auditTrails(): HasMany
     {
-        return $this->hasMany(AuditTrail::class);
+        return $this->hasMany(AuditTrail::class, 'record_id')->where('table_name', 'batches');
     }
 
     public function testDecision(): HasOne

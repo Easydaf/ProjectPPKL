@@ -9,6 +9,8 @@ use App\Http\Requests\ReviewBatchRequest;
 use App\Models\AuditTrail;
 use App\Models\Batch;
 use App\Models\TestDecision;
+use App\Services\CoAService;
+use App\Services\NotificationService;
 use BackedEnum;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -29,8 +31,12 @@ class ReviewController extends Controller
         ]);
     }
 
-    public function update(ReviewBatchRequest $request, int $batch_id): JsonResponse
-    {
+    public function update(
+        ReviewBatchRequest $request,
+        int $batch_id,
+        CoAService $coAService,
+        NotificationService $notificationService,
+    ): JsonResponse {
         $batch = Batch::query()->find($batch_id);
 
         if ($batch === null) {
@@ -40,24 +46,27 @@ class ReviewController extends Controller
         }
 
         $validated = $request->validated();
+        $updatedStatus = null;
 
         try {
-            DB::transaction(function () use ($batch, $validated, $request): void {
+            DB::transaction(function () use ($batch, $validated, $request, &$updatedStatus): void {
                 $oldStatus = $batch->status instanceof BackedEnum
                     ? $batch->status->value
                     : (string) $batch->status;
 
+                $updatedStatus = $validated['keputusan_akhir'];
+
                 $batch->update([
-                    'status' => $validated['keputusan_akhir'],
+                    'status' => $updatedStatus,
                 ]);
 
                 TestDecision::query()->updateOrCreate(
                     ['batch_id' => $batch->id],
                     [
                         'user_id' => $request->user()?->id,
-                        'decision_status' => $validated['keputusan_akhir'],
-                        'action_recommendation' => $validated['catatan_rekomendasi'] ?? null,
-                        'notes' => $validated['catatan_rekomendasi'] ?? null,
+                        'decision_status' => $updatedStatus,
+                        'action_recommendation' => $validated['tindakan_rekomendasi'] ?? null,
+                        'notes' => $validated['catatan'] ?? null,
                     ]
                 );
 
@@ -70,11 +79,24 @@ class ReviewController extends Controller
                         'status' => $oldStatus,
                     ],
                     'new_values' => [
-                        'status' => $validated['keputusan_akhir'],
-                        'catatan_rekomendasi' => $validated['catatan_rekomendasi'] ?? null,
+                        'status' => $updatedStatus,
+                        'tindakan_rekomendasi' => $validated['tindakan_rekomendasi'] ?? null,
+                        'catatan' => $validated['catatan'] ?? null,
                     ],
                 ]);
             });
+
+            if ($updatedStatus === DecisionStatus::Lulus->value) {
+                $coAPath = $coAService->generate($batch->id);
+
+                TestDecision::query()
+                    ->where('batch_id', $batch->id)
+                    ->update(['coa_path' => $coAPath]);
+            }
+
+            if ($updatedStatus === DecisionStatus::UjiUlang->value) {
+                $notificationService->sendToAnalis($batch->id);
+            }
         } catch (Throwable $exception) {
             report($exception);
 

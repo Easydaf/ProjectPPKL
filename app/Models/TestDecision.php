@@ -22,6 +22,18 @@ class TestDecision extends Model
 {
     use HasFactory;
 
+    /**
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'batch_id',
+        'user_id',
+        'decision_status',
+        'action_recommendation',
+        'notes',
+        'coa_path',
+    ];
+
     protected function casts(): array
     {
         return [

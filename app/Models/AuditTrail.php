@@ -21,6 +21,18 @@ class AuditTrail extends Model
 {
     use HasFactory;
 
+    /**
+     * @var array<int, string>
+     */
+    protected $fillable = [
+        'user_id',
+        'table_name',
+        'record_id',
+        'action',
+        'old_values',
+        'new_values',
+    ];
+
     protected function casts(): array
     {
         return [

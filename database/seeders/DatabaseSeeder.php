@@ -2,24 +2,26 @@
 
 namespace Database\Seeders;
 
+use App\Models\Batch;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
-    use WithoutModelEvents;
-
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
-        // User::factory(10)->create();
+        $qcManager = User::create([
+            'name' => 'QC Manager',
+            'email' => 'qc@snackcheck.com',
+            'password' => Hash::make('password'),
+            'role' => 'qc_manager',
+        ]);
 
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        Batch::create([
+            'user_id' => $qcManager->id,
+            'batch_number' => 'BATCH-001',
+            'status' => 'menunggu_review',
         ]);
     }
 }

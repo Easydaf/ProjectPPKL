@@ -17,12 +17,14 @@ Route::get('/', function () {
     ]);
 });
 
-Route::middleware('auth')->group(function () {
-    Route::get('/batches/{batch_id}/review', [ReviewController::class, 'show'])
-        ->whereNumber('batch_id')
-        ->name('batches.review.show');
+Route::get('/batches/{batch_id}/review', [ReviewController::class, 'show'])
+    ->whereNumber('batch_id')
+    ->name('batches.review.show');
 
-    Route::patch('/batches/{batch_id}/review', [ReviewController::class, 'update'])
-        ->whereNumber('batch_id')
-        ->name('batches.review.update');
-});
+Route::put('/batches/{batch_id}/review', [ReviewController::class, 'update'])
+    ->whereNumber('batch_id')
+    ->name('batches.review.update');
+
+Route::patch('/batches/{batch_id}/review', [ReviewController::class, 'update'])
+    ->whereNumber('batch_id')
+    ->name('batches.review.patch');
