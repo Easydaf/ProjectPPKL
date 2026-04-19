@@ -1,0 +1,10 @@
+Login us_3_2_detail_hasil_uji.md
+Prompt: "Buatkan fungsi untuk menampilkan detail parameter uji, hasil perbandingan dengan standar, dan lampiran dokumen dari suatu batch."
+Context File: "ReviewController.php, Batch.php, TestResult.php"
+Skills: "panduan best practice Laravel MVC dari skills.md, gunakan Eager Loading."
+Task: "Generate code for the following user story: 'Sebagai QC Manager, saya ingin melihat ringkasan detail dari semua parameter uji serta hasil-hasil dan lampiran pendukungnya.'"
+Input: "@parameter Integer batch_id"
+Output: "@return JsonResponse berisi detail batch, relasi test_results, dan dokumen"
+Rules: "//validation: Cek ketersediaan batch_id. //action: Return data harus memiliki indikator 'Memenuhi Syarat' atau 'Tidak Memenuhi Syarat' berdasarkan perbandingan nilai tes dan batas standar."
+What Changed: "Menambahkan endpoint show pada controller untuk mengambil detail lengkap hasil lab dan lampiran."
+Commit Message: "feat(review): menampilkan detail parameter uji dan evaluasi standar"

@@ -1,0 +1,10 @@
+Login us_3_1_notifikasi_review.md
+Prompt: "Buatkan fungsi untuk menerima submit hasil tes dari Analis dan mengirimkan notifikasi ke QC Manager."
+Context File: "SubmitTestController.php, NotificationService.php"
+Skills: "panduan best practice Laravel MVC dari skills.md."
+Task: "Generate code for the following user story: 'Sebagai QC Manager, saya ingin menerima notifikasi otomatis ketika analis menyerahkan hasil tes baru untuk direview.'"
+Input: "@parameter Integer batch_id"
+Output: "@return JsonResponse, memanggil fungsi NotificationService"
+Rules: "//validation: Pastikan batch ada. //action: Ubah status batch menjadi 'Menunggu Review'. //action: Kirim notifikasi ke user dengan role 'qc_manager'."
+What Changed: "Membuat fungsi submit hasil uji dan mengintegrasikannya dengan service notifikasi."
+Commit Message: "feat(review): penambahan fitur submit hasil uji dan notifikasi ke qc manager"

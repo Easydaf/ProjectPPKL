@@ -45,4 +45,9 @@ class AuditTrail extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function batch(): BelongsTo
+    {
+        return $this->belongsTo(Batch::class, 'record_id')->where('table_name', 'batches');
+    }
 }

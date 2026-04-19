@@ -1,0 +1,10 @@
+Login us_3_5_notifikasi_keputusan.md
+Prompt: "Buatkan fungsi notifikasi yang memberi tahu Manajer Produksi dan Staff Gudang mengenai hasil keputusan rilis produk."
+Context File: "ReviewController.php, NotificationService.php"
+Skills: "panduan best practice Laravel MVC dari skills.md."
+Task: "Generate code for the following user story: 'Sebagai Manajer Produksi dan Staff Gudang, saya ingin menerima notifikasi otomatis ketika QC Manager membuat keputusan akhir terhadap sebuah batch.'"
+Input: "@parameter Integer batch_id, String keputusan_akhir"
+Output: "@return void (mengeksekusi pengiriman notifikasi)"
+Rules: "//action: Jika keputusan 'Lulus', kirim notif ke 'Manajer Produksi' & 'Staff Gudang' berserta link CoA. //action: Jika keputusan 'Tidak Lulus', kirim notif ke 'Manajer Produksi' beserta alasan dan tindakan rekomendasi."
+What Changed: "Menambahkan logika pengiriman notifikasi hasil keputusan akhir ke pihak terkait berdasarkan status batch."
+Commit Message: "feat(notification): broadcast notifikasi keputusan rilis produk ke produksi dan gudang"

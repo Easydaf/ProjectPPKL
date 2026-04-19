@@ -1,36 +1,103 @@
-# Panduan Pengembangan SnackCheck (Laravel MVC)
+# SnackCheck AI Coding Instructions (Laravel MVC)
 
-File ini berisi instruksi, konvensi, dan best practices untuk AI Copilot dalam menulis kode pada proyek **SnackCheck**. Proyek ini menggunakan arsitektur MVC pada framework Laravel. Selalu gunakan panduan ini sebagai rujukan utama.
+Dokumen ini adalah panduan system instructions untuk AI yang men-generate kode proyek SnackCheck.
+Seluruh implementasi wajib mengikuti standar Laravel modern, berorientasi maintainability, testability, dan keamanan data.
 
-## 1. Konvensi Penulisan Kode (Coding Standards)
-- **Standar PSR-12:** Semua penulisan kode PHP wajib mematuhi standar PSR-12 (indentasi 4 spasi, *opening brace* class/method di baris baru).
-- **Strict Typing:** Selalu gunakan *type-hinting* pada parameter fungsi/method dan tentukan *return type*. 
-  - Contoh: `public function submitDecision(ReviewRequest $request, int $batch_id): RedirectResponse`
-- **Clean Code & SRP:** Jaga fungsi-fungsi agar pendek dan jalankan *Single Responsibility Principle*. Pindahkan logika bisnis eksternal ke kelas Service/Action (seperti `CoAService` untuk *generate PDF* atau notifikasi `ReTestNotification`).
+## 1. Tujuan dan Ruang Lingkup
 
-## 2. Penggunaan Eloquent ORM
-Sistem ini menggunakan struktur database relasional yang terpandu. Terapkan konvensi berikut untuk model-model utama:
-- **Daftar Model Berdasarkan Tabel:** `User`, `Product`, `Batch`, `AuditTrail`, `TestParameter`, `TestTicket`, `TestDecision`, dan `TestResult`.
-- **Relasi Entitas (Relationships):**
-  - Manfaatkan metode relasional bawaan Eloquent. Contoh: `Batch` `hasMany` `AuditTrail`, `Batch` `hasMany` `TestTicket`, atau `Batch` `hasOne` `TestDecision`.
-  - Gunakan nama fungsi tabel terkait (relasi tunggal = method singular, relasi jamak = method plural).
-- **Penanganan Tipe Enum:** Beberapa kolom menggunakan `ENUM` di database (misal: `role` pada `users`, `status` pada `batches`, `decision_status` pada `test_decisions`, dan `category` pada `test_parameters`). Buatlah kelas PHP Enum murni (Native Enum PHP 8.1+) untuk *casting* properti jenis ini di model guna menjamin akurasi validasi.
-- **Mass Assignment:** Wajib menggunakan atribut `$fillable` untuk menentukan rincian data mana yang diizinkan untuk di-*insert* secara massal.
-- **Audit Logging:** Sebagaimana diagram Kelas, setiap aksi penentuan status *Batch* wajib memicu pembuatan rekaman (record) pada tabel/model `AuditTrail` untuk menjaga ketertelusuran data.
+- Proyek menggunakan Laravel (PHP 8+) sebagai backend API.
+- Arsitektur utama yang wajib dipakai adalah MVC (Model, View, Controller) standar Laravel.
+- Semua perubahan kode harus konsisten dengan struktur folder Laravel bawaan.
 
-## 3. Pola Validasi Menggunakan Form Request
-- **Pemisahan Logika Validasi:** Jangan pernah melakukan validasi *hard-code* atau *inline* pada Controller (misal, hindari `$request->validate([...])`).
-- **Gunakan Class Khusus:** Buat dan gunakan `FormRequest` khusus untuk memisahkan logika validasi aturan (*rules*) dan otorisasi dari fungsi pengontrol.
-  - *Contoh Berdasarkan Class Diagram:* Gunakan `ReviewRequest` untuk menangani endpoint `submitDecision`.
-  - Class `ReviewRequest` ini harus mendefinisikan rules untuk menerima data: `decision` (lulus/tidak_lulus/uji_ulang/ditahan), `recommendation`, dan `decision_reason` (terkait dengan record di tabel `test_decisions` atau status pada `batches`).
-- **Injeksi Dependency:** Lakukakan *type-hinting* langsung (*Dependency Injection*) kelas `ReviewRequest` pada metode Controller supaya validasi dijalankan secara otomatis saat *route* dipanggil.
+## 2. Project Structure (Wajib)
 
-## 4. Aturan Penamaan Route & Controller
-- **Penamaan Controller:**
-  - Gunakan `PascalCase` diakhiri dengan sufiks `Controller`.
-  - Gunakan pendekatan *Thin Controller*, dengan berfokus kepada penerimaan Request dan pengembalian Response/View. Eksekusi yang berat dioper kepada service seperti `CoAService`.
-  - **Contoh pada Class Diagram:** Gunakan `ReviewController` untuk mengatur flow UI manajer QC (seperti method `show()` dan `submitDecision()`).
-- **Aturan Route:**
-  - Buat rute dengan format nama URL menggunakan *kebab-case* dan harus rapi. (Contoh URL: `/batches/{batch}/review`).
-  - Selalu terapkan Route Naming menggunakan *dot notation* untuk referensi yang lebih aman di Views dan Controllers (Contoh nama route: `batches.review` atau `review.submit`).
-  - Gunakan pembatas rute dalam grup (contoh: di bawah middleware `auth` dan otorisasi *Role* QC Manager untuk akses ke sistem Review).
+- Gunakan arsitektur MVC standar Laravel.
+- Controller hanya menangani alur HTTP: menerima request, memanggil service, mengembalikan response.
+- Model hanya menangani representasi data, relasi Eloquent, casting, dan aturan mass assignment.
+- View dipakai jika dibutuhkan halaman web; untuk endpoint API backend fokus utama adalah JSON response.
+- Logika lintas domain dan pekerjaan berat tidak boleh ditempatkan di Controller.
+
+## 3. Validation (Wajib)
+
+- Selalu pisahkan validasi input dari Controller menggunakan Form Request Validation.
+- Dilarang memakai validasi inline di Controller.
+- Semua endpoint yang menerima input harus memiliki Form Request khusus.
+- Form Request minimal berisi:
+    - authorize
+    - rules
+    - messages (jika perlu memperjelas error)
+- Controller hanya menggunakan data tervalidasi dari request.
+
+## 4. Business Logic dengan Service Pattern (Wajib)
+
+- Gunakan Service Pattern untuk proses berat atau reusable, misalnya:
+    - generate PDF
+    - pengiriman notifikasi
+    - integrasi eksternal
+    - orkestrasi proses multi-langkah
+- Controller harus tetap tipis (thin controller).
+- Service dipanggil melalui Dependency Injection, bukan inisialisasi manual di dalam method.
+- Proses yang melibatkan banyak penulisan database dianjurkan berada dalam transaksi.
+
+## 5. Data Integrity dan Mass Assignment (Wajib)
+
+- Setiap Model wajib mendefinisikan proteksi mass assignment melalui properti fillable.
+- Jangan gunakan input mentah untuk create atau update tanpa whitelist field.
+- Pastikan field sensitif tidak dapat diisi mass assignment secara tidak sengaja.
+- Untuk kolom enum di database, gunakan enum PHP native dan casting di model jika relevan.
+
+## 6. API Response Standard (Wajib)
+
+- Karena ini backend API, semua Controller harus mengembalikan JSON menggunakan response json.
+- Format response harus konsisten:
+    - sukses: message, data
+    - gagal validasi: mengikuti standar Laravel validation error
+    - gagal proses: message error yang jelas dan status code tepat
+- Gunakan HTTP status code yang sesuai, misalnya:
+    - 200 atau 201 untuk sukses
+    - 404 untuk resource tidak ditemukan
+    - 422 untuk validasi gagal
+    - 500 untuk error server
+
+## 7. Routing dan Naming Convention
+
+- Definisikan route secara eksplisit dengan nama route yang konsisten.
+- Gunakan parameter route yang deskriptif dan validasi tipe jika dibutuhkan.
+- Penamaan Controller menggunakan PascalCase dengan suffix Controller.
+- Penamaan method mengikuti aksi yang jelas, misalnya show, store, update, destroy, submitDecision.
+
+## 8. Eloquent dan Relasi Data
+
+- Definisikan relasi Eloquent secara lengkap dan benar (hasOne, hasMany, belongsTo, dll).
+- Lakukan eager loading untuk mencegah N+1 query pada endpoint yang menampilkan relasi.
+- Gunakan casting pada atribut tanggal, boolean, integer, dan enum sesuai kebutuhan.
+
+## 9. Error Handling dan Logging
+
+- Tangani exception di lapisan yang tepat dan kembalikan JSON error yang aman.
+- Gunakan logging untuk kejadian penting seperti kegagalan proses service.
+- Hindari mengembalikan detail internal exception ke client produksi.
+
+## 10. Kualitas Kode
+
+- Wajib mengikuti PSR-12.
+- Gunakan strict types jika file sudah menerapkannya.
+- Terapkan single responsibility principle pada class dan method.
+- Hindari duplikasi logic; ekstrak ke service, helper, atau action class bila diperlukan.
+
+## 11. Checklist Implementasi AI
+
+Sebelum menyelesaikan output, AI wajib memastikan:
+
+- Sudah memakai struktur MVC standar Laravel.
+- Validasi sudah dipindah ke Form Request.
+- Business logic berat sudah dipindah ke Service Pattern.
+- Model yang diubah sudah memiliki fillable yang aman.
+- Controller mengembalikan JSON response yang konsisten.
+- Route endpoint sudah didefinisikan dan siap diuji.
+
+## 12. Prinsip Eksekusi untuk AI
+
+- Prioritaskan keterbacaan dan maintainability dibanding solusi cepat yang rapuh.
+- Jangan membuat perubahan di luar scope task.
+- Jika ada ambiguitas requirement, gunakan asumsi paling aman dan dokumentasikan secara singkat.

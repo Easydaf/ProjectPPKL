@@ -12,22 +12,85 @@ use App\Models\TestDecision;
 use App\Services\CoAService;
 use App\Services\NotificationService;
 use BackedEnum;
-use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
 class ReviewController extends Controller
 {
-    public function show(int $batch_id): View
+    public function show(int $batch_id): JsonResponse
     {
         $batch = Batch::query()
-            ->with(['testDecision', 'auditTrails.user'])
-            ->findOrFail($batch_id);
+            ->with([
+                'product',
+                'submitter',
+                'testResults.parameter',
+                'testDecision.coaDocument',
+                'coaDocument',
+                'auditTrails.user',
+            ])
+            ->find($batch_id);
 
-        return view('reviews.show', [
-            'batch' => $batch,
-            'decisionOptions' => DecisionStatus::cases(),
+        if ($batch === null) {
+            return response()->json([
+                'message' => 'Batch tidak ditemukan.',
+            ], 404);
+        }
+
+        $testResults = $batch->testResults->map(function ($testResult): array {
+            $parameter = $testResult->parameter;
+            $isCompliant = $this->isResultCompliant(
+                $testResult->result_value,
+                $parameter?->min_value,
+                $parameter?->max_value,
+                (bool) $testResult->is_compliant,
+            );
+
+            return [
+                'id' => $testResult->id,
+                'parameter' => $parameter?->parameter_name,
+                'category' => $parameter?->category instanceof BackedEnum ? $parameter->category->value : $parameter?->category,
+                'result_value' => $testResult->result_value,
+                'standard_min' => $parameter?->min_value,
+                'standard_max' => $parameter?->max_value,
+                'indicator' => $isCompliant ? 'Memenuhi Syarat' : 'Tidak Memenuhi Syarat',
+                'attachment_path' => $testResult->attachment_path,
+                'submitted_at' => $testResult->submitted_at?->toDateTimeString(),
+            ];
+        })->values();
+
+        return response()->json([
+            'message' => 'Detail batch berhasil diambil.',
+            'data' => [
+                'batch' => [
+                    'id' => $batch->id,
+                    'batch_number' => $batch->batch_number,
+                    'status' => $this->normalizeStatusValue($batch->status),
+                    'product' => $batch->product?->name,
+                    'variant' => $batch->product?->variant,
+                    'sample_quantity' => $batch->sample_quantity,
+                    'production_date' => $this->formatDateValue($batch->getRawOriginal('production_date')),
+                    'expiration_date' => $this->formatDateValue($batch->getRawOriginal('expiration_date')),
+                ],
+                'test_results' => $testResults,
+                'documents' => [
+                    'coa_document' => $batch->coaDocument?->file_path,
+                    'coa_number' => $batch->coaDocument?->coa_number,
+                ],
+                'test_decision' => $batch->testDecision ? [
+                    'decision_status' => $this->normalizeStatusValue($batch->testDecision->decision_status),
+                    'action_recommendation' => $batch->testDecision->action_recommendation,
+                    'notes' => $batch->testDecision->notes,
+                    'coa_path' => $batch->testDecision->coa_path,
+                ] : null,
+                'audit_trails' => $batch->auditTrails->map(fn(AuditTrail $auditTrail): array => [
+                    'id' => $auditTrail->id,
+                    'action' => $auditTrail->action,
+                    'old_values' => $auditTrail->old_values,
+                    'new_values' => $auditTrail->new_values,
+                    'created_at' => optional($auditTrail->created_at)?->toDateTimeString(),
+                ])->values(),
+            ],
         ]);
     }
 
@@ -87,15 +150,13 @@ class ReviewController extends Controller
             });
 
             if ($updatedStatus === DecisionStatus::Lulus->value) {
-                $coAPath = $coAService->generate($batch->id);
-
-                TestDecision::query()
-                    ->where('batch_id', $batch->id)
-                    ->update(['coa_path' => $coAPath]);
+                $coAService->generate($batch->id);
             }
 
-            if ($updatedStatus === DecisionStatus::UjiUlang->value) {
-                $notificationService->sendToAnalis($batch->id);
+            $freshBatch = $batch->fresh(['testDecision', 'coaDocument']);
+
+            if ($freshBatch !== null) {
+                $notificationService->broadcastDecision($freshBatch);
             }
         } catch (Throwable $exception) {
             report($exception);
@@ -114,6 +175,27 @@ class ReviewController extends Controller
         ]);
     }
 
+    private function isResultCompliant(mixed $resultValue, mixed $minValue, mixed $maxValue, bool $storedCompliance): bool
+    {
+        if ($resultValue === null || ($minValue === null && $maxValue === null)) {
+            return $storedCompliance;
+        }
+
+        $numericValue = (float) $resultValue;
+        $minimum = $minValue !== null ? (float) $minValue : null;
+        $maximum = $maxValue !== null ? (float) $maxValue : null;
+
+        if ($minimum !== null && $numericValue < $minimum) {
+            return false;
+        }
+
+        if ($maximum !== null && $numericValue > $maximum) {
+            return false;
+        }
+
+        return true;
+    }
+
     private function normalizeStatusValue(mixed $status): ?string
     {
         if ($status instanceof BackedEnum) {
@@ -125,5 +207,14 @@ class ReviewController extends Controller
         }
 
         return null;
+    }
+
+    private function formatDateValue(mixed $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return date('Y-m-d', strtotime((string) $value));
     }
 }

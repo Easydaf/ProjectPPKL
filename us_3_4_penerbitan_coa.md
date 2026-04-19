@@ -1,0 +1,10 @@
+Login us_3_4_penerbitan_coa.md
+Prompt: "Buatkan service untuk men-generate file PDF Certificate of Analysis (CoA) secara otomatis jika batch dinyatakan lulus."
+Context File: "CoAService.php, ReviewController.php, Batch.php"
+Skills: "panduan best practice Laravel MVC dari skills.md, penggunaan Service Pattern."
+Task: "Generate code for the following user story: 'Sebagai QC Manager, saya ingin sistem secara otomatis membuat Certificate of Analysis (CoA) dalam format PDF ketika sebuah batch dinyatakan lolos.'"
+Input: "@parameter Integer batch_id"
+Output: "@return Boolean true (menandakan PDF sukses dibuat dan path tersimpan)"
+Rules: "//action: Fungsi generate() hanya dieksekusi JIKA keputusan akhir QC adalah 'Lulus'. //action: Buat format nomor CoA unik (misal: COA-YYYYMMDD-ID). //action: Simpan path file PDF tersebut ke tabel database terkait."
+What Changed: "Membuat CoAService untuk menangani logika pembuatan sertifikat PDF terpisah dari controller utama."
+Commit Message: "feat(coa): implementasi service penerbitan sertifikat analisis otomatis"
