@@ -217,4 +217,40 @@ class ReviewController extends Controller
 
         return date('Y-m-d', strtotime((string) $value));
     }
+    public function requestRetest(\Illuminate\Http\Request $request, int $batch_id): JsonResponse
+    {
+        $batch = \App\Models\Batch::find($batch_id);
+
+        if ($batch === null) {
+            return response()->json(['message' => 'Batch tidak ditemukan.'], 404);
+        }
+
+        // PERBAIKAN: Menerjemahkan tipe data Enum Laravel menjadi teks string biasa
+        $currentStatus = $batch->status instanceof \BackedEnum 
+            ? $batch->status->value 
+            : (string) $batch->status;
+
+        // Validasi: hanya batch 'tidak_lulus' yang boleh di-retest
+        if ($currentStatus !== 'tidak_lulus') {
+            return response()->json([
+                'message' => 'Error 422: Request ditolak. Retest hanya berlaku untuk batch yang tidak_lulus. Status saat ini: ' . $currentStatus,
+            ], 422);
+        }
+
+        $batch->update(['status' => 'menunggu_retest']);
+
+        \App\Models\AuditTrail::create([
+            'user_id' => $request->user()?->id,
+            'table_name' => 'batches',
+            'record_id' => $batch->id,
+            'action' => 'request_retest',
+            'old_values' => ['status' => $currentStatus],
+            'new_values' => ['status' => 'menunggu_retest'],
+        ]);
+
+        return response()->json([
+            'message' => 'Request Re-test berhasil diajukan.',
+            'data' => ['status' => 'menunggu_retest']
+        ]);
+    }
 }

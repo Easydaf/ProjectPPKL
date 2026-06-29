@@ -19,15 +19,7 @@ return new class extends Migration
             $table->date('production_date')->nullable();
             $table->date('expiration_date')->nullable();
             $table->integer('sample_quantity')->nullable();
-            $table->enum('status', [
-                'menunggu_penerimaan',
-                'sedang_diuji',
-                'menunggu_review',
-                'lulus',
-                'tidak_lulus',
-                'ditahan',
-                'uji_ulang',
-            ])->default('menunggu_review');
+            $table->enum('status', ['menunggu_penerimaan', 'sedang_diuji', 'menunggu_review', 'lulus', 'tidak_lulus', 'ditahan', 'uji_ulang', 'menunggu_retest', 'dalam_retest'])->default('menunggu_penerimaan');
             $table->timestamps();
 
             $table->index('product_id');

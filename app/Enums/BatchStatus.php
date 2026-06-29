@@ -13,4 +13,6 @@ enum BatchStatus: string
     case TidakLulus = 'tidak_lulus';
     case Ditahan = 'ditahan';
     case UjiUlang = 'uji_ulang';
+    case MenungguRetest = 'menunggu_retest';
+    case DalamRetest = 'dalam_retest';
 }

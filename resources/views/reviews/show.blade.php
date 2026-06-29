@@ -293,6 +293,9 @@
                     <div class="col-6">
                         <button id="btn_get_detail">US 3.2 - Lihat Detail Batch</button>
                     </div>
+                    <div class="col-12" style="margin-top: 10px;">
+                        <button id="btn_request_retest" class="btn-ok" style="background-color: #f59e0b; border-color: #d97706;">CR-Epic - Request Re-Test (Khusus Batch Gagal)</button>
+                    </div>
                 </div>
 
                 <hr style="border-color:#334155; margin: 18px 0;">
@@ -552,6 +555,18 @@
                 if (error.message !== 'invalid_batch_id') {
                     setStatus('Gagal memanggil endpoint keputusan akhir.', 'err');
                 }
+            }
+        });
+
+        document.getElementById('btn_request_retest').addEventListener('click', async () => {
+            try {
+                const batchId = getBatchId();
+                setStatus('Mengajukan Request Re-test...', 'warn');
+                const { response, payload } = await requestJson(`/batches/${batchId}/request-retest`, { method: 'POST' });
+                showResponse('CR-Epic - Request Re-Test', payload, response.status);
+                setStatus(payload.message || 'Request Re-test selesai.', response.ok ? 'ok' : 'err');
+            } catch (error) {
+                if (error.message !== 'invalid_batch_id') setStatus('Gagal memanggil endpoint re-test.', 'err');
             }
         });
     </script>

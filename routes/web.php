@@ -39,3 +39,7 @@ Route::put('/batches/{batch_id}/review', [ReviewController::class, 'update'])
 Route::patch('/batches/{batch_id}/review', [ReviewController::class, 'update'])
     ->whereNumber('batch_id')
     ->name('batches.review.patch');
+
+    Route::post('/batches/{batch_id}/request-retest', [App\Http\Controllers\ReviewController::class, 'requestRetest'])
+    ->whereNumber('batch_id')
+    ->name('batches.retest.request');
