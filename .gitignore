@@ -23,3 +23,9 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+.env
+.venv/
+vendor/
+node_modules/
+.pytest_cache/
+__pycache__/
