@@ -10,7 +10,6 @@ def run_snackcheck_regression():
     print("Sistem SnackCheck - Epic Re-test (Kelompok 6)\n")
     
     options = webdriver.ChromeOptions()
-    # options.add_argument("--headless") # Hapus tanda pagar jika ingin tes berjalan di latar belakang tanpa membuka jendela Chrome
     driver = webdriver.Chrome(options=options)
     wait = WebDriverWait(driver, 10)
     
@@ -109,7 +108,7 @@ def run_snackcheck_regression():
         print(f"\n[ERROR] Regression Test Gagal pada Eksekusi: {e}")
         
     finally:
-        time.sleep(3) # Tunggu sejenak agar Anda bisa melihat hasilnya
+        time.sleep(3)
         driver.quit()
         print("Sesi WebDriver ditutup.")
 
